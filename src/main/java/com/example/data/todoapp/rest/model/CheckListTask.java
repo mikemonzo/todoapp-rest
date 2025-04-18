@@ -40,4 +40,8 @@ public class CheckListTask extends Task {
         items.remove(item);
         item.setTask(this);
     }
+
+    public void removeItemById(Long id) {
+        items.removeIf(item -> item.getId().equals(id));
+    }
 }
