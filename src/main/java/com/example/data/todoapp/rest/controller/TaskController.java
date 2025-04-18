@@ -12,6 +12,7 @@ import com.example.data.todoapp.rest.model.CheckListItem;
 import com.example.data.todoapp.rest.model.CheckListTask;
 import com.example.data.todoapp.rest.model.User;
 import com.example.data.todoapp.rest.model.Task;
+import com.example.data.todoapp.rest.model.TaskTag;
 import com.example.data.todoapp.rest.repository.TaskRepository;
 import com.example.data.todoapp.rest.repository.TaskTagRepository;
 import com.example.data.todoapp.rest.repository.UserRepository;
@@ -150,6 +151,38 @@ public class TaskController {
         }
         taskRepository.toggleCheckListItem(id, itemId);
         return ResponseEntity.of(taskRepository.findByIdWithItemsAndTags(id).map(TaskResponse::of));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        taskRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/tag/add/{tag}")
+    public ResponseEntity<TaskResponse> addTag(@PathVariable String tag, @PathVariable Long id) {
+
+        TaskTag taskTag = taskTagRepository.findByName(tag)
+                .orElseGet(() -> taskTagRepository.save(TaskTag.builder().name(tag).build()));
+
+        return ResponseEntity.of(taskRepository.findByIdWithItemsAndTags(id).map(task -> {
+            task.getTags().add(taskTag);
+            return taskRepository.save(task);
+        }).map(TaskResponse::of));
+    }
+
+    @DeleteMapping("/{id}/tag/del/{tag}")
+    public ResponseEntity<TaskResponse> deleteTag(@PathVariable String tag, @PathVariable Long id) {
+
+        Optional<TaskTag> taskTag = taskTagRepository.findByName(tag);
+
+        if (taskTag.isPresent()) {
+            return ResponseEntity.of(taskRepository.findByIdWithItemsAndTags(id).map(task -> {
+                task.getTags().removeIf(tagItem -> tagItem.getName().equalsIgnoreCase(tag));
+                return taskRepository.save(task);
+            }).map(TaskResponse::of));
+        }
+        return ResponseEntity.notFound().build();
     }
 }
 
